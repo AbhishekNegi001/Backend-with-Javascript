@@ -1,0 +1,21 @@
+{
+  "name": "01projectbackend",
+  "version": "1.0.0",
+  "description": "basic backend project",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "start": "node index.js"
+  },
+  "keywords": [
+    "node",
+    "project",
+    "backend"
+  ],
+  "author": "Abhishek Negi",
+  "license": "ISC",
+  "dependencies": {
+    "dotenv": "^16.4.4",
+    "express": "^4.18.2"
+  }
+}
