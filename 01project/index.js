@@ -2,7 +2,7 @@
 const express = require('express')
 require('dotenv').config() // for using .env variables, before that npm i dotenv 
 const app = express()
-const port = 3000;
+const port = process.env.PORT;
 
 const data = {
   'name' : 'Abhishek Negi',
@@ -27,6 +27,6 @@ app.get('/info', (req,res)=>{
   res.json(data)
 })
 
-app.listen(process.env.PORT, () => {
+app.listen(port, () => {
     console.log(`Project1 is listening port no. ${port}`)
 })
