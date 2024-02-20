@@ -19,3 +19,11 @@ add  -r dotenv/config --experimental-json-modules in scripts in package.json
 # npm i cors
 
 CORS_ORIGIN=*  (* specifies everything)
+
+# npm i mongoose-aggregate-paginate-v2
+It is a Mongoose plugin that adds pagination support to the MongoDB aggregation framework in a Mongoose model.
+
+# npm install bcrypt
+it is a library that helps us to hash our passwords
+
+# npm install jsonwebtoken
