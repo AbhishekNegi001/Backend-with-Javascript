@@ -55,7 +55,7 @@ const userSchema = new Schema(
 // pre middleware function are execute just after the function when middleware calls next
 userSchema.pre("save", async function(next){
     if(this.isModified("password")){ // run if password field has been modified
-        this.password=bcrypt.hash(this.password, 10) //encrypts the given password with given no. of rounds
+        this.password=await bcrypt.hash(this.password, 10) //encrypts the given password with given no. of rounds
         next()
     }
     return

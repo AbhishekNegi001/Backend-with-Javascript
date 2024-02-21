@@ -27,3 +27,9 @@ It is a Mongoose plugin that adds pagination support to the MongoDB aggregation 
 it is a library that helps us to hash our passwords
 
 # npm install jsonwebtoken
+
+packages to upload files - express-fileupload or multer
+# npm i multer
+
+# npm install cloudinary
+for storing the files in 3rd party service cloudinary

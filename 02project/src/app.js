@@ -13,5 +13,13 @@ app.use(express.urlencoded({extended: true, limit:"16kb"})) // for taking respon
 app.use(express.static("public")) //to store the files or folders as public asset
 app.use(cookieParser())//to access and set the cookies of users browser from the server
 
+// import routes
+import router from './routes/user.routes.js';
+
+//routes declaration
+// in app.get() we declare routes and controllers inside the function
+// whereas in app.use() we can declare routes and controllers outside the function 
+// and then later import them inside the function
+app.use("/api/v1/users", router)
 
 export {app}

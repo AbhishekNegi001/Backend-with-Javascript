@@ -9,3 +9,5 @@ class ApiResponse{
         this.message=message
     }
 }
+
+export {ApiResponse}
