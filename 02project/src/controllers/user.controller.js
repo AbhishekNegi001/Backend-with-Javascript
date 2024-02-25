@@ -107,6 +107,13 @@ const loginUser = asyncHandler(async (req,res)=>{
     if(!isPasswordValid){
         throw new ApiError(402,"Password not valid")
     }
+
+    const {accessToken, refreshToken} = await generateAccessAndRefreshToken(user._id)
+    
+    const loggedInUser = User.findById(user._id).select("-password -refreshToken")
+    //todo
+    //user.refreshToken = refreshToken
+    //const loggedInUser = user.select("-password -refreshToken")
 })
 
 const generateAccessAndRefreshToken = async (userId)=>{
@@ -114,6 +121,11 @@ const generateAccessAndRefreshToken = async (userId)=>{
         const user = await User.findById(userId);
         const accessToken = user.generateAccessToken();
         const refreshToken = user.generateRefreshToken();
+
+        user.refreshToken = refreshToken;
+        user.save({validateBeforeSave:false})
+
+        return {accessToken, refreshToken}
     }
     catch(error){
         throw new ApiError(500,"Something went wrong while generating tokens")
