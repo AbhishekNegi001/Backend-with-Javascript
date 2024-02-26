@@ -111,9 +111,30 @@ const loginUser = asyncHandler(async (req,res)=>{
     const {accessToken, refreshToken} = await generateAccessAndRefreshToken(user._id)
     
     const loggedInUser = User.findById(user._id).select("-password -refreshToken")
-    //todo
-    //user.refreshToken = refreshToken
-    //const loggedInUser = user.select("-password -refreshToken")
+    
+    const options = {
+        httpOnly: true, // When httpOnly is set to true, it means that the cookie is only accessible 
+        // through HTTP requests and cannot be accessed by client-side scripts in the browser.
+        secure: true // When secure is set to true, it means that the cookie will only be sent over 
+        // HTTPS connections. 
+    }
+
+    return res.status(200)
+    .cookie("accessToken", accessToken, options)
+    .cookie("refreshToken", refreshToken, options)
+    .json(
+        new ApiResponse(
+            200,
+            {
+                user: loggedInUser,accessToken,refreshToken
+            },
+            "User loggedin Successfully"
+        )
+    )
+})
+
+const logoutUser = asyncHandler(async (req,res)=>{
+    
 })
 
 const generateAccessAndRefreshToken = async (userId)=>{
@@ -132,4 +153,4 @@ const generateAccessAndRefreshToken = async (userId)=>{
     }
 }
 
-export {registerUser,loginUser};
+export {registerUser,loginUser,logoutUser};
