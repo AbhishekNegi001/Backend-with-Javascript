@@ -54,11 +54,11 @@ const userSchema = new Schema(
 
 // pre middleware function are execute just after the function when middleware calls next
 userSchema.pre("save", async function(next){
-    if(this.isModified("password")){ // run if password field has been modified
-        this.password=await bcrypt.hash(this.password, 10) //encrypts the given password with given no. of rounds
-        next()
-    }
-    return
+    if(!this.isModified("password")) 
+        return next();
+
+    this.password = await bcrypt.hash(this.password, 10)//encrypts the given password with given no. of rounds
+    next()
 }) // donot use arrow function as callback as it needs reference of current object
 
 userSchema.methods.isPasswordCorrect = async function(password){

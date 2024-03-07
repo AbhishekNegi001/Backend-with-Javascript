@@ -1,10 +1,10 @@
 import { ApiError } from '../utils/apiError.js'
 import {asyncHandler} from '../utils/asyncHandler.js'
 import User from '../models/user.model.js'
-import { uploadCloudinary } from '../utils/cloudinary.js'
 import { ApiResponse } from '../utils/apiResponse.js'
 import jwt from "jsonwebtoken"
 import { uploadOnCloudinary } from '../utils/cloudinary.js'
+import mongoose from 'mongoose'
 
 //get user details
 //validate - field should not be empty
@@ -52,8 +52,8 @@ const registerUser = asyncHandler(async (req,res)=>{
     }
 
     //upload them into cloudinary
-    const avatar = await uploadCloudinary(avatarLocalPath)
-    const coverImage = await uploadCloudinary(coverImageLocalPath)
+    const avatar = await uploadOnCloudinary(avatarLocalPath)
+    const coverImage = await uploadOnCloudinary(coverImageLocalPath)
 
     if(!avatar){
         throw new ApiError(400, "Avatar File is required")
@@ -94,9 +94,9 @@ const registerUser = asyncHandler(async (req,res)=>{
 // send cookies
 const loginUser = asyncHandler(async (req,res)=>{
     const {email,username,password} = req.body
-    console.log(req.body);
-    console.log(email);
-    console.log(password);
+    //console.log(req.body);
+    //console.log(email);
+    //console.log(password);
 
     if(!(email || username)){
         throw new ApiError(400,"Either username or email is required")
@@ -114,9 +114,9 @@ const loginUser = asyncHandler(async (req,res)=>{
     }
 
     const {accessToken, refreshToken} = await generateAccessAndRefreshToken(user._id)
-    console.log(accessToken);
+    //console.log(accessToken);
     const loggedInUser = await User.findById(user._id).select("-password -refreshToken")
-    console.log(loggedInUser);
+    //console.log(loggedInUser);
     const options = {
         httpOnly: true, // When httpOnly is set to true, it means that the cookie is only accessible 
         // through HTTP requests and cannot be accessed by client-side scripts in the browser.
@@ -142,8 +142,8 @@ const logoutUser = asyncHandler(async (req,res)=>{
     await User.findByIdAndUpdate(
         req.user._id,
         {
-            $set: {
-                refreshToken: undefined
+            $unset: {
+                refreshToken: 1
             }
         },
         {
@@ -165,42 +165,52 @@ const logoutUser = asyncHandler(async (req,res)=>{
 })
 
 const refreshAccessToken = asyncHandler(async (req,res)=>{
-    const incomingRefreshToken = req.cookies.accessToken || req.body.accessToken // for pc browsers and mobile
+    const incomingRefreshToken = req.cookies.refreshToken || req.body.refreshToken // for pc browsers and mobile
+    console.log("incoming refresh token :",incomingRefreshToken);
+    //console.log("refresh token secret:", process.env.REFRESH_TOKEN_SECRET);
 
     if(!incomingRefreshToken){
         throw new ApiError(401,"unauthorized request")
     }
-    const decodedToken = jwt.verify(
-        incomingRefreshToken,
-        process.env.REFRESH_TOKEN_SECRET
-    )
-    const user = await User.findById(decodedToken?._id)
-    if(!user){
-        throw new ApiError(401,"unauthorized request")
-    }
-
-    if(incomingRefreshToken !== user?.refreshToken){
-        throw new ApiError(401,"Refresh token is expired")
-    }
-
-    const options = {
-        httpOnly: true,
-        secure: true
-    }
-
-    const{accessToken,newRefreshToken} = await generateAccessAndRefreshToken(user._id)
-
-    return res
-    .status(200)
-    .cookie("accessToken", accessToken)
-    .cookie("refreshToken", newRefreshToken)
-    .json(
-        new ApiResponse(
-            200,
-            {accessToken, refreshToken: newRefreshToken},
-            "Access Token refreshed successfully"
+    try {
+        const decodedToken = jwt.verify(
+            incomingRefreshToken,
+            process.env.REFRESH_TOKEN_SECRET
         )
-    )
+        console.log("decoded Token :", decodedToken);
+        const user = await User.findById(decodedToken?._id)
+        if(!user){
+            throw new ApiError(401,"Invalid refresh token")
+        }
+    
+        if(incomingRefreshToken !== user?.refreshToken){
+            throw new ApiError(401,"Refresh token is expired")
+        }
+    
+        const options = {
+            httpOnly: true,
+            secure: true
+        }
+    
+        const {accessToken,newRefreshToken} = await generateAccessAndRefreshToken(user._id)
+        console.log(accessToken);
+        console.log();
+        console.log(newRefreshToken)
+    
+        return res
+        .status(200)
+        .cookie("accessToken", accessToken, options)
+        .cookie("refreshToken", newRefreshToken, options)
+        .json(
+            new ApiResponse(
+                200,
+                {accessToken, refreshToken: newRefreshToken},
+                "Access Token refreshed successfully"
+            )
+        )
+    } catch (error) {
+        throw new ApiError(401, error?.message || "Invalid refresh token")
+    }
 })
 
 const generateAccessAndRefreshToken = async (userId)=>{
@@ -408,7 +418,59 @@ const getUserChannelProfile = asyncHandler(async(req, res)=>{
     )
 })
 
+const getWatchHistory = asyncHandler(async(req, res) => {
+    const user = await User.aggregate([
+        {
+            $match: {
+                _id: new mongoose.Types.ObjectId(req.user._id)
+            }
+        },
+        {
+            $lookup: {
+                from: "videos",
+                localField: "watchHistory",
+                foreignField: "_id",
+                as: "watchHistory",
+                pipeline: [
+                    {
+                        $lookup: {
+                            from: "users",
+                            localField: "owner",
+                            foreignField: "_id",
+                            as: "owner",
+                            pipeline: [
+                                {
+                                    $project: {
+                                        fullName: 1,
+                                        username: 1,
+                                        avatar: 1
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    {
+                        $addFields:{
+                            owner:{
+                                $first: "$owner"
+                            }
+                        }
+                    }
+                ]
+            }
+        }
+    ])
 
+    return res
+    .status(200)
+    .json(
+        new ApiResponse(
+            200,
+            user[0].watchHistory,
+            "Watch history fetched successfully"
+        )
+    )
+})
 
 export {
     registerUser,
@@ -419,5 +481,7 @@ export {
     changeCurrentPassword,
     updateAccountDetails,
     updateUserAvatar,
-    updateUserCoverImage
+    updateUserCoverImage,
+    getUserChannelProfile,
+    getWatchHistory
 };
